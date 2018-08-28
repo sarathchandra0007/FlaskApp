@@ -5,6 +5,7 @@ from data import Articles
 import sqlite3
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 from passlib.hash import sha256_crypt
+from functools import wraps
 
 app = Flask(__name__)
 Articles=Articles()
@@ -30,9 +31,22 @@ def articles():
 def article(id):
     return render_template('article.html',id=id)
 
+def is_logged_in(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Unauthorized, Please login', 'danger')
+            return redirect(url_for('login'))
+    return wrap
+
 @app.route('/dashboard')
+@is_logged_in
 def dashboard():
     return render_template('dashboard.html')
+
+
 
 class RegisterForm(Form):
     name=StringField('Name',[validators.Length(min=1,max=50)])
@@ -80,9 +94,9 @@ def login():
             #print (data)
             password = data[4]
             if sha256_crypt.verify(password_candidate, password):
-                # Passed
                 session['logged_in'] = True
                 session['username'] = username
+                #print (session)
                 flash('You are now logged in', 'success')
                 return redirect(url_for('dashboard'))
             else:
@@ -98,6 +112,8 @@ def login():
 
 @app.route('/logout')
 def logout():
+    session.clear()
+    flash("Logged out successfully",'success')
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
