@@ -30,6 +30,10 @@ def articles():
 def article(id):
     return render_template('article.html',id=id)
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 class RegisterForm(Form):
     name=StringField('Name',[validators.Length(min=1,max=50)])
     username=StringField('Username',[validators.Length(min=4,max=25)])
@@ -43,6 +47,8 @@ class RegisterForm(Form):
 @app.route('/register',methods=['GET','POST'])
 def register():
     form = RegisterForm(request.form)
+    print (request.form)
+    print (form)
     if request.method == 'POST' and form.validate():
         name = form.name.data
         email = form.email.data
@@ -58,6 +64,37 @@ def register():
         return redirect(url_for('new'))
     return render_template('register.html',forminst=form)
 
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        #print (request.form)
+        username = request.form['username']
+        password_candidate = request.form['password']
+        cursor = connection.cursor()
+        result = cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        #print (result)
+
+        if result:
+            data = cursor.fetchone()
+            #print (data)
+            password = data[4]
+            if sha256_crypt.verify(password_candidate, password):
+                # Passed
+                session['logged_in'] = True
+                session['username'] = username
+                flash('You are now logged in', 'success')
+                return redirect(url_for('dashboard'))
+            else:
+                error = 'Invalid login'
+                return render_template('login.html', error=error)
+            # Close connection
+            cur.close()
+        else:
+            error = 'Username not found'
+            return render_template('login.html', error=error)
+
+    return render_template('login.html')
 
 if __name__ == '__main__':
     app.secret_key='secret123'
