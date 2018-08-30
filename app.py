@@ -1,5 +1,5 @@
 from flask import Flask,render_template, flash, redirect, session, url_for, logging, request
-from data import Articles
+#from data import Articles
 # from flask_mysqldb import MySQL
 # from flaskext.mysql import MySQL
 import sqlite3
@@ -8,7 +8,7 @@ from passlib.hash import sha256_crypt
 from functools import wraps
 
 app = Flask(__name__)
-Articles=Articles()
+#Articles=Articles()
 
 app.debug=True
 connection = sqlite3.connect('data.db',check_same_thread=False)
@@ -61,8 +61,8 @@ class RegisterForm(Form):
 @app.route('/register',methods=['GET','POST'])
 def register():
     form = RegisterForm(request.form)
-    print (request.form)
-    print (form)
+    #print (request.form)
+    #print (form)
     if request.method == 'POST' and form.validate():
         name = form.name.data
         email = form.email.data
@@ -111,10 +111,34 @@ def login():
     return render_template('login.html')
 
 @app.route('/logout')
+@is_logged_in
 def logout():
     session.clear()
     flash("Logged out successfully",'success')
     return redirect(url_for('login'))
+
+#Articles
+class ArticleForm(Form):
+    title=StringField('Title',[validators.Length(min=1,max=90)])
+    body=TextAreaField('Body',[validators.Length(min=5)])
+
+@app.route('/add_article',methods=['GET','POST'])
+@is_logged_in
+def add_article():
+    form = ArticleForm(request.form)
+    if request.method == 'POST' and form.validate():
+        title = form.title.data
+        body = form.body.data
+        cursor = connection.cursor()
+        # Execute query
+        cursor.execute("INSERT INTO flask_articles(title,body,author) VALUES(?,?,?)", (title,body,session['username']))
+        connection.commit()
+        cursor.close()
+        flash('Article Created', 'success')
+
+        return redirect(url_for('dashboard'))
+    return render_template('aricle_form.html',form=form)
+
 
 if __name__ == '__main__':
     app.secret_key='secret123'
