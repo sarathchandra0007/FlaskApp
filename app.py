@@ -13,7 +13,11 @@ app = Flask(__name__)
 app.debug=True
 connection = sqlite3.connect('data.db',check_same_thread=False)
 
-
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
 
 @app.route('/')
 def hello():
@@ -44,9 +48,16 @@ def is_logged_in(f):
 @app.route('/dashboard')
 @is_logged_in
 def dashboard():
-    return render_template('dashboard.html')
-
-
+    cursor = connection.cursor()
+    connection.row_factory = dict_factory
+    result = cursor.execute("SELECT * FROM flask_articles")
+    articles = cursor.fetchall()
+    if result:
+        return render_template('dashboard.html', articles=articles)
+    else:
+        msg = 'No Articles Found'
+        return render_template('dashboard.html', msg=msg)
+    cursor.close()
 
 class RegisterForm(Form):
     name=StringField('Name',[validators.Length(min=1,max=50)])
