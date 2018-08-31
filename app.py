@@ -29,11 +29,27 @@ def new():
 
 @app.route('/articles')
 def articles():
+    cursor = connection.cursor()
+    connection.row_factory = dict_factory
+    result = cursor.execute("SELECT * FROM flask_articles")
+    articles = cursor.fetchall()
+    if result:
+        return render_template('articles.html', articles=articles)
+    else:
+        msg = 'No Articles Found'
+        return render_template('articles.html', msg=msg)
+    cursor.close()
+
     return render_template('articles.html',articles=Articles)
 
 @app.route('/article/<string:id>/')
 def article(id):
-    return render_template('article.html',id=id)
+    cursor = connection.cursor()
+    connection.row_factory = dict_factory
+    result = cursor.execute("SELECT * FROM flask_articles WHERE id = ?", (id,))
+    article = cursor.fetchone()
+    cursor.close()
+    return render_template('article.html', article=article)
 
 def is_logged_in(f):
     @wraps(f)
