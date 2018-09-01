@@ -191,6 +191,16 @@ def edit_article(id):
     return render_template('edit_article.html', form=form)
 
 
+@app.route('/delete_article/<string:id>', methods=['POST'])
+@is_logged_in
+def delete_article(id):
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM flask_articles WHERE id = ?", (id,))
+    connection.commit()
+    cursor.close()
+    flash('Article Deleted', 'success')
+    return redirect(url_for('dashboard'))
+
 if __name__ == '__main__':
     app.secret_key='secret123'
     app.run()
