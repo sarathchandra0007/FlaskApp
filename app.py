@@ -167,6 +167,30 @@ def add_article():
     return render_template('aricle_form.html',form=form)
 
 
+@app.route('/article_edit/<string:id>',methods=['GET','POST'])
+def edit_article(id):
+    cursor = connection.cursor()
+    connection.row_factory = dict_factory
+    result = cursor.execute("SELECT * FROM flask_articles WHERE id = ?", (id,))
+    article = cursor.fetchone()
+    #print(article[1])
+    form = ArticleForm(request.form)
+    form.title.data = article["title"]
+    form.body.data = article["body"]
+
+    if request.method == 'POST' and form.validate():
+        title = request.form['title']
+        body = request.form['body']
+        cursor.execute ("UPDATE flask_articles SET title=?, body=? WHERE id=?",(title, body, id))
+        connection.commit()
+        cursor.close()
+        flash('Article Updated', 'success')
+
+        return redirect(url_for('dashboard'))
+
+    return render_template('edit_article.html', form=form)
+
+
 if __name__ == '__main__':
     app.secret_key='secret123'
     app.run()
